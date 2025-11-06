@@ -9,7 +9,7 @@ import { clerkMiddleware, requireAuth } from "@clerk/express";
 import cors from "cors";
 
 const app = express();
-app.use(cors(process.env.CLIENT_URL || '*'));
+app.use(cors(process.env.CLIENT_URL || "*"));
 app.use(clerkMiddleware());
 app.use("/webhooks", webhookRouter);
 app.use(express.json());
@@ -58,7 +58,11 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
   connectDB();
 });
+
+export default app;
