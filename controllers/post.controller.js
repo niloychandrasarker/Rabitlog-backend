@@ -143,6 +143,58 @@ export const deletePost = async (req, res) => {
   res.status(200).json("Post has been deleted");
 };
 
+export const updatePost = async (req, res) => {
+  const clerkUserId = req.auth().userId;
+
+  if (!clerkUserId) {
+    return res.status(401).json("Not authenticated!");
+  }
+
+  const role = req.auth().sessionClaims?.metadata?.role || "user";
+  const user = await User.findOne({ clerkUserId });
+
+  if (!user) {
+    return res.status(404).json("User not found!");
+  }
+
+  // Check if post exists
+  const existingPost = await Post.findById(req.params.id);
+
+  if (!existingPost) {
+    return res.status(404).json("Post not found!");
+  }
+
+  // Check permissions: admin can edit all, user can edit only their own
+  if (
+    role !== "admin" &&
+    existingPost.user.toString() !== user._id.toString()
+  ) {
+    return res.status(403).json("You can only edit your own posts!");
+  }
+
+  // If title is being updated, regenerate slug
+  let updateData = { ...req.body };
+
+  if (req.body.title && req.body.title !== existingPost.title) {
+    let slug = req.body.title.replace(/ /g, "-").toLowerCase();
+    let slugExists = await Post.findOne({ slug, _id: { $ne: req.params.id } });
+
+    let counter = 2;
+    while (slugExists) {
+      slug = `${slug}-${counter}`;
+      slugExists = await Post.findOne({ slug, _id: { $ne: req.params.id } });
+      counter++;
+    }
+    updateData.slug = slug;
+  }
+
+  const updatedPost = await Post.findByIdAndUpdate(req.params.id, updateData, {
+    new: true,
+  }).populate("user", "username img");
+
+  res.status(200).json(updatedPost);
+};
+
 export const featurePost = async (req, res) => {
   const clerkUserId = req.auth().userId;
   const postId = req.body.postId;
