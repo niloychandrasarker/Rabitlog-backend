@@ -73,10 +73,12 @@ export const getPosts = async (req, res) => {
 };
 
 export const getPost = async (req, res) => {
-  const post = await Post.findOne({ slug: req.params.slug }).populate(
-    "user",
-    "username img"
-  );
+  const post = await Post.findOneAndUpdate(
+    { slug: req.params.slug },
+    { $inc: { visit: 1 } },
+    { new: true }
+  ).populate("user", "username img");
+
   res.status(200).json(post);
 };
 
